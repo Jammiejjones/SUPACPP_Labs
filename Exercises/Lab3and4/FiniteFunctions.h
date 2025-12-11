@@ -1,5 +1,8 @@
 #include <string>
 #include <vector>
+#include <numbers>
+#include <cmath>    // For the sqrt() function
+
 #include "gnuplot-iostream.h"
 
 #pragma once //Replacement for IFNDEF
@@ -23,6 +26,7 @@ public:
   void plotData(std::vector<double> &points, int NBins, bool isdata=true); //NB! use isdata flag to pick between data and sampled distributions
   virtual void printInfo(); //Dump parameter info about the current function (Overridable)
   virtual double callFunction(double x); //Call the function with value x (Overridable)
+  //virtual double callFunction(double x,double mew, double mean);
 
   //Protected members can be accessed by child classes but not users
 protected:
@@ -30,6 +34,7 @@ protected:
   double m_RMax;
   double m_Integral;
   int m_IntDiv = 0; //Number of division for performing integral
+  const double PI = 4.0 * std::atan(1.0);
   std::string m_FunctionName;
   std::string m_OutData; //Output filename for data
   std::string m_OutPng; //Output filename for plot
@@ -46,4 +51,7 @@ protected:
   
 private:
   double invxsquared(double x); //The default functional form
+  double normalDist(double x);
+  double cauchyDist(double x);
+  double crystalDist(double x);
 };

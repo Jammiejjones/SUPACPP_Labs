@@ -1,6 +1,8 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <numbers>
+#include <cmath>    // For the sqrt() function
 #include "FiniteFunctions.h"
 #include <filesystem> //To check extensions in a nice way
 
@@ -12,6 +14,7 @@ using std::filesystem::path;
 FiniteFunction::FiniteFunction(){
   m_RMin = -5.0;
   m_RMax = 5.0;
+  std::string m_functionStr = "Default" ;
   this->checkPath("DefaultFunction");
   m_Integral = NULL;
 }
@@ -53,8 +56,63 @@ double FiniteFunction::rangeMax() {return m_RMax;};
 //Function eval
 ###################
 */ 
+double FiniteFunction::normalDist(double x){
+    double mew = 1.0;
+    double mean = 1;
+
+    return 1/(mean * std::sqrt(2*PI))*std::exp(-1*((x-mew)/mean)*((x-mew)/mean)/2);
+};
+
+double FiniteFunction::cauchyDist(double x){
+    double x0= 1;
+    double gamma = 1.2;
+
+    return 1/(PI*gamma*(1+((x-x0)/gamma)*((x-x0)/gamma)));
+};
+
+double FiniteFunction::crystalDist(double x){
+    double mean= 1;
+    double SD = 1.9;
+    double alpha = 2;
+    double n = 1.1;
+
+    double cutoff = (x - mean)/SD;
+
+    double A = std::pow(n/std::abs(alpha),n)*exp(-(std::abs(alpha)*std::abs(alpha))/2);
+    double B = (n/std::abs(alpha)) - std::abs(alpha);
+    double C = (n/std::abs(alpha))*(1/(n-1))*exp(-(std::abs(alpha)*std::abs(alpha))/2);
+    double D = std::sqrt(PI/2)*(1+std::erf((std::abs(alpha)/(std::sqrt(2)))));
+
+    double N = 1/(SD*(C+D));
+
+    if (cutoff > -alpha){
+      return std::exp(-1*(x-mean)*(x-mean)/(2*SD*SD));
+    };
+    if(cutoff <= -alpha){
+      return A*std::pow((B-cutoff),(-1*n));
+    };
+
+};
+
 double FiniteFunction::invxsquared(double x) {return 1/(1+x*x);};
-double FiniteFunction::callFunction(double x) {return this->invxsquared(x);}; //(overridable)
+//double FiniteFunction::callFunction(double x) {return this->invxsquared(x);}; //(overridable)
+
+
+double FiniteFunction::callFunction(double x) {
+  if (m_FunctionName == "Norm"){
+      return this->normalDist(x);
+    }
+  if (m_FunctionName == "Cauchy"){
+      return this->cauchyDist(x);
+    }
+  if (m_FunctionName == "Crystal"){
+      return this->crystalDist(x);
+    }
+  else {
+      return this->invxsquared(x);
+    };
+}; //(overridable)
+  
 
 /*
 ###################
@@ -63,7 +121,17 @@ Integration by hand (output needed to normalise function when plotting)
 */ 
 double FiniteFunction::integrate(int Ndiv){ //private
   //ToDo write an integrator
-  return -99;  
+  
+
+  //Take hist data (m_data), sperate the height of the bins, then sum these numbers
+  std::vector<double> secondPair;
+  double sumOfVector = 0;
+  for(const auto& p: m_data){
+    sumOfVector += p.second*(m_RMax-m_RMin)/m_data.size();
+  }
+  std::cout << sumOfVector;
+
+  return sumOfVector;  
 }
 double FiniteFunction::integral(int Ndiv) { //public
   if (Ndiv <= 0){
@@ -162,6 +230,9 @@ std::vector< std::pair<double,double> > FiniteFunction::makeHist(std::vector<dou
   for (double point : points){
     //Get bin index (starting from 0) the point falls into using point value, range, and Nbins
     int bindex = static_cast<int>(floor((point-m_RMin)/((m_RMax-m_RMin)/(double)Nbins)));
+    if (bindex<0 || bindex>=Nbins){
+      continue;
+    }
     bins[bindex]++; //weight of 1 for each data point
     norm++; //Total number of data points
   }
